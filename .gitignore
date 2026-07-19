@@ -1,0 +1,26 @@
+# Data & models (too large / regenerable)
+datasets/
+*.mat
+*.zip
+models/artifacts/
+rag/index/
+*.pkl
+
+# Secrets — never commit
+.env
+*.key
+
+# Python
+__pycache__/
+venv/
+.venv/
+*.pyc
+
+# Node / frontend
+node_modules/
+dist/
+build/
+
+# OS / editor
+.DS_Store
+.vscode/
