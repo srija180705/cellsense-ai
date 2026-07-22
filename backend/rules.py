@@ -3,19 +3,28 @@ Deterministic rule engine — risk banding.
 
 Safety-critical banding is intentionally NOT done by the LLM. Thresholds are
 explicit and auditable. (State of Health = capacity / initial capacity.)
+
+Five stages give the operator a graded view of battery life rather than a blunt
+three-way split.
 """
 
-HEALTHY_MIN = 0.85
-WATCH_MIN = 0.78  # below this = Critical
+# SoH (%) lower bounds for each band, most-healthy first.
+BAND_THRESHOLDS = [
+    ("Healthy", 90),
+    ("Early Wear", 85),
+    ("Watch", 80),
+    ("Near End-of-Life", 75),
+    ("Critical", 0),
+]
+
+# Most-urgent-first ordering for fleet prioritisation and summaries.
+BANDS = ["Critical", "Near End-of-Life", "Watch", "Early Wear", "Healthy"]
+RISK_ORDER = {b: i for i, b in enumerate(BANDS)}
 
 
 def risk_band(soh: float) -> str:
-    if soh >= HEALTHY_MIN:
-        return "Healthy"
-    if soh >= WATCH_MIN:
-        return "Watch"
+    pct = soh * 100
+    for name, low in BAND_THRESHOLDS:
+        if pct >= low:
+            return name
     return "Critical"
-
-
-# Sort order for fleet prioritisation (most urgent first)
-RISK_ORDER = {"Critical": 0, "Watch": 1, "Healthy": 2}

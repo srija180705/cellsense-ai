@@ -1,16 +1,23 @@
+const BAND_META = [
+  { key: "Critical", cls: "critical" },
+  { key: "Near End-of-Life", cls: "near-end-of-life" },
+  { key: "Watch", cls: "watch" },
+  { key: "Early Wear", cls: "early-wear" },
+  { key: "Healthy", cls: "healthy" },
+];
+
 export default function SummaryCards({ summary }) {
-  const cards = [
-    { label: "Total Assets", value: summary.total, cls: "total" },
-    { label: "Critical", value: summary.critical, cls: "critical" },
-    { label: "Watch", value: summary.watch, cls: "watch" },
-    { label: "Healthy", value: summary.healthy, cls: "healthy" },
-  ];
+  const bands = summary.bands || {};
   return (
     <div className="cards">
-      {cards.map((c) => (
-        <div key={c.label} className={`card card-${c.cls}`}>
-          <div className="card-value">{c.value}</div>
-          <div className="card-label">{c.label}</div>
+      <div className="card card-total">
+        <div className="card-value">{summary.total}</div>
+        <div className="card-label">Total Assets</div>
+      </div>
+      {BAND_META.map((b) => (
+        <div key={b.key} className={`card card-${b.cls}`}>
+          <div className="card-value">{bands[b.key] ?? 0}</div>
+          <div className="card-label">{b.key}</div>
         </div>
       ))}
     </div>

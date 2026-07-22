@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend import fleet_service
+from backend.rules import BANDS
 from agents.orchestrator import run as run_agents
 
 app = FastAPI(title="CellSense AI API", version="0.1.0")
@@ -36,12 +37,8 @@ def health():
 @app.get("/api/fleet")
 def fleet():
     assets = fleet_service.get_fleet()
-    summary = {
-        "total": len(assets),
-        "critical": sum(a["risk"] == "Critical" for a in assets),
-        "watch": sum(a["risk"] == "Watch" for a in assets),
-        "healthy": sum(a["risk"] == "Healthy" for a in assets),
-    }
+    summary = {"total": len(assets)}
+    summary["bands"] = {b: sum(a["risk"] == b for a in assets) for b in BANDS}
     return {"summary": summary, "assets": assets}
 
 
@@ -58,4 +55,4 @@ def recommend(asset_id: str):
     detail = fleet_service.get_asset(asset_id)
     if detail is None:
         raise HTTPException(status_code=404, detail="asset not found")
-    return run_agents(detail)
+    return run_agents(detail, fleet_service.FLEET_STATS, fleet_service.MODEL_DRIVERS)

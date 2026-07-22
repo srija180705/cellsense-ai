@@ -24,6 +24,23 @@ _soh_model = joblib.load(ART / "soh_model.pkl")
 _rul_model = joblib.load(ART / "rul_model.pkl")
 _df = pd.read_csv(FLEET_CSV)
 
+# Fleet-wide reference statistics (computed once) for the explanation agent.
+_last_rows = _df.sort_values("cycle").groupby("asset_id").tail(1)
+FLEET_STATS = {
+    "cycles_median": float((_last_rows["cycle"] + 1).median()),
+    "max_temp_median": round(float(_last_rows["max_temp"].median()), 1),
+}
+
+# What the SoH model weighs most — real model explainability (top 3 features).
+try:
+    _imp = _soh_model.feature_importances_
+    MODEL_DRIVERS = sorted(
+        ({"feature": f, "importance": round(float(v), 3)} for f, v in zip(FEATURE_COLS, _imp)),
+        key=lambda x: -x["importance"],
+    )[:3]
+except Exception:
+    MODEL_DRIVERS = []
+
 
 def _predict(last_row: pd.DataFrame):
     soh_pred = float(_soh_model.predict(last_row[FEATURE_COLS])[0])

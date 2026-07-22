@@ -70,8 +70,8 @@ The hackathon offered 8 statements. We evaluated all of them and narrowed using 
 **CellSense AI is an Asset Performance Management platform for industrial EV fleets.** It does three things, in order:
 
 1. **Predicts** each battery asset's **State of Health (SoH)** and **Remaining Useful Life (RUL)** from real cell data (machine learning).
-2. **Ranks the fleet by risk** using a deterministic rule engine (Healthy / Watch / Critical).
-3. **Recommends a grounded, cited maintenance action** for any asset via a small multi-agent pipeline that retrieves supporting text from a maintenance knowledge base.
+2. **Ranks the fleet by risk** using a deterministic rule engine with **five graded stages** (Healthy → Early Wear → Watch → Near End-of-Life → Critical).
+3. **Explains and recommends** — for any asset, a knowledge-graph-driven agent pipeline produces a per-asset **"why it is degrading" analysis** (quantified drivers, probable causes, degradation rate, and the model's most-weighted features) plus a **prioritised, cited multi-action maintenance plan**.
 
 The demo arc is: *see which asset fails next → open it → see its real degradation curve and predicted life → click Generate → get a cited "replace within N cycles, because…" recommendation.*
 
@@ -124,7 +124,7 @@ Build order was **P1 → P2 → P4 → P3** (model first, then serve it, then vi
 
 ### Phase P2 — the backend API
 
-1. **Rule engine** (`backend/rules.py`): deterministic risk banding — **Healthy ≥ 85%**, **Watch 78–85%**, **Critical < 78%** SoH. Safety-critical banding is intentionally *not* left to any model.
+1. **Rule engine** (`backend/rules.py`): deterministic **five-stage** risk banding by SoH — **Healthy ≥ 90%**, **Early Wear 85–90%**, **Watch 80–85%**, **Near End-of-Life 75–80%**, **Critical < 75%**. Safety-critical banding is intentionally *not* left to any model.
 2. **Fleet builder** (`models/training/build_fleet.py`): builds the demo fleet from the **4 clean core cells**, each **snapshotted at several life stages** (30%, 55%, 75%, 100% of life). This yields **16 assets** with a realistic spread of health (SoH range 0.57–1.00), all from real data. Each asset is tagged with a type (Haul Truck / Forklift / Loader / Yard Shuttle). Output: `datasets/processed/fleet_features.csv`.
    *Why snapshots:* using every cell's *last* cycle made everything look end-of-life; snapshots give a realistic operating fleet. (We also found some higher-numbered NASA cells produce invalid SoH because their first cycle isn't a full-capacity reference — so the fleet is restricted to the 4 verified-clean cells.)
 3. **Fleet service** (`backend/fleet_service.py`): loads the two trained models + the fleet CSV, and produces the fleet overview and per-asset detail. SoH shown is **measured**; SoH/RUL predictions come from the models.
@@ -143,8 +143,8 @@ Build order was **P1 → P2 → P4 → P3** (model first, then serve it, then vi
 2. **Retriever** (`rag/retriever.py`): **TF-IDF** retrieval (scikit-learn) over those sections — runs offline with zero downloads; returns the top matching sections with a citation string.
 3. **Agents** (`agents/orchestrator.py`): a three-step pipeline —
    - **Monitor** — summarises the asset's condition, flags concerns (e.g. elevated discharge temperature > 41 °C).
-   - **Diagnose** — infers probable cause + severity from the asset state, and **retrieves supporting guidance**.
-   - **Recommend** — composes a grounded action (what + when) with citations.
+   - **Diagnose** — detects symptoms and traverses a **lightweight knowledge graph** (`agents/knowledge_graph.py`, networkx: symptom → cause → action) to explain probable causes; also quantifies *why* it is degrading (recent vs early fade rate, thermal state, cycle count, and the SoH model's top feature importances).
+   - **Recommend** — produces a **prioritised, cited multi-action plan** (Immediate / Soon / Monitor), each action grounded via retrieval.
 4. **Optional LLM** (`agents/llm.py`): if a free key/model is available (Groq free tier via `GROQ_API_KEY`, or a local Ollama server) it polishes the wording; **otherwise a deterministic template is used**. The system is fully functional with **no LLM and no paid API**. The response field `llm_used` reports which path ran.
 5. **Frontend:** a **Generate** button on each asset calls the recommend endpoint and shows the recommendation text plus **citation chips**.
 
@@ -200,7 +200,7 @@ Our formal **solution document** (`CellSense_AI_Solution_Document.pdf`) proposes
 |---|---|
 | Relational database (SQLite / Postgres) | **CSV files** on disk (`cell_features.csv`, `fleet_features.csv`) |
 | Vector database (ChromaDB) + MiniLM embeddings | **TF-IDF** retrieval (scikit-learn) |
-| Knowledge graph | **Not used** (was intentionally out of scope) |
+| Knowledge graph | **Implemented (lightweight)** — a `networkx` failure-mode graph (symptom → cause → action) powers the degradation explanations |
 | LLM always in the loop | **LLM optional**; deterministic template by default |
 
 None of these change the demo behaviour; they are pragmatic substitutions for hackathon speed and zero cost. Swapping in a real DB or a vector store later would not require redesigning the system.

@@ -39,9 +39,11 @@ export default function AssetDetail({ asset }) {
   const [chartRef, chartWidth] = useContainerWidth();
   const [reco, setReco] = useState(null);
   const [loadingReco, setLoadingReco] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
 
   useEffect(() => {
     setReco(null);
+    setShowWhy(false);
   }, [asset?.asset_id]);
 
   async function generate() {
@@ -115,16 +117,73 @@ export default function AssetDetail({ asset }) {
         {reco && (
           <>
             <div className="reco-text">{reco.recommendation.text}</div>
-            <div className="reco-cites">
-              {reco.citations.map((c, i) => (
-                <span key={i} className="cite-chip" title={c.snippet}>
-                  {c.source}
-                </span>
+
+            <div className="action-list">
+              {reco.recommendation.actions.map((a, i) => (
+                <div key={i} className="action-row">
+                  <span className={`prio prio-${a.priority.toLowerCase()}`}>{a.priority}</span>
+                  <div className="action-body">
+                    <div className="action-title">{a.action}</div>
+                    <div className="action-reason">{a.reason}</div>
+                    {a.citation && (
+                      <span className="cite-chip" title={a.snippet}>{a.citation}</span>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
+
+            <button className="why-toggle" onClick={() => setShowWhy((v) => !v)}>
+              {showWhy ? "▾ Hide degradation analysis" : "▸ Why is it degrading?"}
+            </button>
+
+            {showWhy && (
+              <div className="why-panel">
+                <p className="why-narrative">{reco.explanation.narrative}</p>
+
+                {reco.explanation.drivers.length > 0 && (
+                  <div className="why-block">
+                    <div className="why-h">Observed drivers</div>
+                    {reco.explanation.drivers.map((d, i) => (
+                      <div key={i} className="why-item"><b>{d.factor}:</b> {d.evidence}</div>
+                    ))}
+                  </div>
+                )}
+
+                {reco.explanation.causes.length > 0 && (
+                  <div className="why-block">
+                    <div className="why-h">Probable causes</div>
+                    {reco.explanation.causes.map((c, i) => (
+                      <div key={i} className="why-item"><b>{c.cause}:</b> {c.why}</div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="why-block">
+                  <div className="why-h">Degradation rate</div>
+                  <div className="why-item">
+                    Recent {reco.explanation.fade_rate_recent_pct_per_cycle}%/cycle vs early-life{" "}
+                    {reco.explanation.fade_rate_early_pct_per_cycle}%/cycle
+                    {reco.explanation.accelerating ? " — accelerating" : " — stable"}
+                  </div>
+                </div>
+
+                {reco.explanation.model_drivers.length > 0 && (
+                  <div className="why-block">
+                    <div className="why-h">What the model weighs most</div>
+                    <div className="why-item">
+                      {reco.explanation.model_drivers
+                        .map((m) => `${m.feature} (${(m.importance * 100).toFixed(0)}%)`)
+                        .join(", ")}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="reco-tag">
-              {reco.llm_used ? "LLM-composed" : "rule-composed"} · grounded in{" "}
-              {reco.citations.length} sources
+              {reco.llm_used ? "LLM-composed" : "rule-composed"} · knowledge-graph reasoning ·
+              grounded in {reco.citations.length} source{reco.citations.length === 1 ? "" : "s"}
             </div>
           </>
         )}
