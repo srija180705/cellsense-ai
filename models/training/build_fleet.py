@@ -24,7 +24,7 @@ OUT_CSV = REPO_ROOT / "datasets" / "processed" / "fleet_features.csv"
 
 CORE_CELLS = ["B0005", "B0006", "B0007", "B0018"]
 EOL_CAPACITY = 1.4
-SNAPSHOTS = [0.30, 0.55, 0.75, 1.0]          # life-stage fractions per cell
+SNAPSHOTS = [0.20, 0.35, 0.50, 0.65, 0.80, 0.90, 1.0]   # 7 life-stage fractions per cell (4 cells -> 28 assets)
 ASSET_TYPES = ["Haul Truck", "Forklift", "Loader", "Yard Shuttle"]
 
 
