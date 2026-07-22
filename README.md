@@ -156,8 +156,8 @@ the grounded rule-composed recommendation is used. The knowledge base is
 | **P2** | FastAPI backend serving fleet predictions | ✅ Done |
 | **P4** | React fleet dashboard (risk ranking, drill-down, SoH curve) | ✅ Done |
 | **P3** | RAG corpus + 3-agent grounded, cited recommendation | ✅ Done |
-| P5 | End-to-end integration | ⏳ Planned |
-| P6 | Demo polish, deck, video | ⏳ Planned |
+| **P5** | End-to-end integration (dashboard ↔ API ↔ models ↔ agents) | ✅ Done |
+| **P6** | Pitch deck + demo script | ✅ Done · demo video to record |
 
 ---
 
