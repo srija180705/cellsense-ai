@@ -21,7 +21,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
-from utils.features import FEATURE_COLS
+from utils.features import FEATURE_COLS, RUL_FEATURE_COLS
 
 CSV = REPO_ROOT / "datasets" / "processed" / "cell_features.csv"
 ARTIFACTS = REPO_ROOT / "models" / "artifacts"
@@ -73,9 +73,8 @@ def main():
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
 
     soh_model, soh_metrics = evaluate(df, "soh", FEATURE_COLS, "SoH estimation", "SoH")
-    # RUL uses the health features plus current SoH as an extra signal
-    rul_features = FEATURE_COLS + ["soh"]
-    rul_model, rul_metrics = evaluate(df, "rul", rul_features, "RUL prediction", "cycles")
+    # RUL uses the health features plus trajectory signals (SoH, cap loss, fade rate, cycle)
+    rul_model, rul_metrics = evaluate(df, "rul", RUL_FEATURE_COLS, "RUL prediction", "cycles")
 
     joblib.dump(soh_model, ARTIFACTS / "soh_model.pkl")
     joblib.dump(rul_model, ARTIFACTS / "rul_model.pkl")

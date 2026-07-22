@@ -42,3 +42,9 @@ FEATURE_COLS = [
     "mean_voltage", "min_voltage", "mean_temp", "max_temp",
     "temp_rise", "discharge_time", "time_v_window", "volt_drop_rate",
 ]
+
+# The RUL model additionally uses current SoH as a signal. (Trajectory features
+# such as cap-loss / fade-rate / cycle index were tested but did not improve
+# cross-cell generalisation — the absolute scales differ per cell — so the
+# proven curve+SoH feature set is kept.)
+RUL_FEATURE_COLS = FEATURE_COLS + ["soh"]

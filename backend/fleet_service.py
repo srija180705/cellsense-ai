@@ -14,7 +14,7 @@ import joblib
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
-from utils.features import FEATURE_COLS
+from utils.features import FEATURE_COLS, RUL_FEATURE_COLS
 from backend.rules import risk_band, RISK_ORDER
 
 ART = REPO_ROOT / "models" / "artifacts"
@@ -44,9 +44,7 @@ except Exception:
 
 def _predict(last_row: pd.DataFrame):
     soh_pred = float(_soh_model.predict(last_row[FEATURE_COLS])[0])
-    rul_in = last_row[FEATURE_COLS].copy()
-    rul_in["soh"] = last_row["soh"].values
-    rul_pred = float(_rul_model.predict(rul_in[FEATURE_COLS + ["soh"]])[0])
+    rul_pred = float(_rul_model.predict(last_row[RUL_FEATURE_COLS])[0])
     return soh_pred, max(rul_pred, 0.0)
 
 
