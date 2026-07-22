@@ -1,0 +1,11 @@
+# CellSense AI — Python dependencies
+numpy
+pandas
+scipy
+scikit-learn
+xgboost
+joblib
+matplotlib
+fastapi
+uvicorn[standard]
+requests

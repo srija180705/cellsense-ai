@@ -1,0 +1,15 @@
+# CellSense AI - run the backend in Docker.
+#   cd deployment && docker compose up --build
+# The NASA .mat data must already be on the host in datasets/NASA_Battery/mat/.
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the repo so datasets, code and generated artifacts stay in sync
+      - ..:/app
+    environment:
+      - PYTHONUNBUFFERED=1

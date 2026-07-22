@@ -68,23 +68,83 @@ The NASA battery data is large (200 MB+) and is **git-ignored**. Download it you
 
 ## Setup & run
 
-```bash
-# 1. Create a virtual environment
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS / Linux
+First, download the NASA data into `datasets/NASA_Battery/mat/` (see the Data section above). Then pick one of the options below.
 
-# 2. Install dependencies
-pip install -r requirements.txt
+### Option A — one-command scripts (recommended)
 
-# 3. Build the processed dataset from the raw cells
-python models/training/build_dataset.py
-
-# 4. Train and evaluate the SoH + RUL models
-python models/training/train.py
+**Windows (PowerShell):**
+```powershell
+.\setup.ps1          # creates .venv and installs everything (run once)
+.\run_backend.ps1    # trains models on first run, then starts the API
 ```
 
-Step 4 prints the accuracy metrics and saves models to `models/artifacts/`.
+**macOS / Linux:**
+```bash
+bash setup.sh
+bash run_backend.sh
+```
+
+`run_backend` auto-trains the models and builds the fleet table on the first run, then serves the API at **http://localhost:8000** (interactive docs at `/docs`).
+
+### Option B — Docker
+```bash
+cd deployment
+docker compose up --build
+```
+The container trains the models on first start (needs the NASA data on the host) and serves the API on port 8000.
+
+### Option C — manual
+```bash
+python -m venv .venv
+.venv\Scripts\activate                       # Windows  (source .venv/bin/activate on macOS/Linux)
+pip install -r requirements.txt
+python models/training/build_dataset.py      # processed training table
+python models/training/train.py              # train + evaluate (prints RMSE)
+python models/training/build_fleet.py        # fleet table for the API
+uvicorn backend.main:app --reload --port 8000
+```
+
+### API endpoints
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/api/health` | Service status |
+| GET | `/api/fleet` | All assets + risk summary (sorted most-urgent-first) |
+| GET | `/api/assets/{id}` | Per-asset detail + SoH history curve |
+| POST | `/api/assets/{id}/recommend` | Agent pipeline → grounded, cited maintenance recommendation |
+
+### Frontend dashboard (React)
+
+With the backend running on `:8000`, start the dashboard in a second terminal:
+
+**Windows:** `.\run_frontend.ps1`  ·  **macOS/Linux:** `bash run_frontend.sh`
+
+Then open **http://localhost:5173**. The dashboard shows:
+- Fleet summary cards (total / critical / watch / healthy)
+- A risk-ranked asset table (click a row to inspect)
+- Per-asset detail: measured SoH, predicted SoH, RUL, and the State-of-Health degradation curve
+
+The dev server proxies `/api` to the backend automatically (no CORS setup needed).
+
+### AI maintenance recommendations (agent layer)
+
+Clicking **Generate** on an asset runs a three-agent pipeline (`agents/`):
+Monitor → Diagnose → Recommend. The Diagnosis agent retrieves supporting text
+from the maintenance knowledge base (`rag/corpus/`, TF-IDF retrieval) and the
+Recommendation agent produces a grounded, **cited** action.
+
+This works fully offline with **no LLM required** (deterministic, template-composed
+text). To have a free LLM polish the prose instead, set one of:
+
+```bash
+# Option 1 — Groq free tier
+setx GROQ_API_KEY "your_free_groq_key"      # Windows (new terminal after)
+# Option 2 — local Ollama (must be running)
+#   ollama run llama3.1   (then it is auto-detected at localhost:11434)
+```
+
+When a key/model is available the response's `llm_used` flips to `true`; otherwise
+the grounded rule-composed recommendation is used. The knowledge base is
+**illustrative** — replace the files in `rag/corpus/` with your OEM manuals for production.
 
 ---
 
@@ -93,9 +153,9 @@ Step 4 prints the accuracy metrics and saves models to `models/artifacts/`.
 | Phase | Scope | Status |
 |---|---|---|
 | **P1** | Data parsing + SoH/RUL ML core (provable RMSE) | ✅ Done |
-| P2 | FastAPI backend + database serving predictions | ⏳ Next |
-| P3 | RAG corpus + 3-agent grounded recommendation | ⏳ Planned |
-| P4 | React fleet dashboard (risk ranking, drill-down) | ⏳ Planned |
+| **P2** | FastAPI backend serving fleet predictions | ✅ Done |
+| **P4** | React fleet dashboard (risk ranking, drill-down, SoH curve) | ✅ Done |
+| **P3** | RAG corpus + 3-agent grounded, cited recommendation | ✅ Done |
 | P5 | End-to-end integration | ⏳ Planned |
 | P6 | Demo polish, deck, video | ⏳ Planned |
 

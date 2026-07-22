@@ -1,0 +1,12 @@
+# Keep the Docker build context small (these are mounted at runtime instead)
+.venv/
+datasets/
+models/artifacts/
+node_modules/
+__pycache__/
+*.pyc
+.git/
+*.zip
+*.mat
+docs/
+frontend/node_modules/
